@@ -15,7 +15,7 @@ def remove_bot_comments(comments_url: str, user_id: int):
         user_id: The user's account id number.
     """
     logger.info("comments_url: %s", comments_url)
-    Globals.response_buffer = requests.get(comments_url)
+    Globals.response_buffer = requests.get(comments_url, headers=API_HEADERS)
     comments = Globals.response_buffer.json()
     for i, comment in enumerate(comments):
         # only serach for comments from the user's ID and
@@ -210,7 +210,7 @@ def get_review_id(reviews_url: str, user_id: int) -> int:
         The ID number of the review created by the action's generic bot.
     """
     logger.info("  review_url: %s", reviews_url)
-    Globals.response_buffer = requests.get(reviews_url)
+    Globals.response_buffer = requests.get(reviews_url, headers=API_HEADERS)
     review_id = find_review(json.loads(Globals.response_buffer.text), user_id)
     if review_id is None:  # create a PR review
         Globals.response_buffer = requests.post(
@@ -228,7 +228,7 @@ def get_review_id(reviews_url: str, user_id: int) -> int:
             "Got %d from POSTing new(/temp) PR review",
             Globals.response_buffer.status_code,
         )
-        Globals.response_buffer = requests.get(reviews_url)
+        Globals.response_buffer = requests.get(reviews_url, headers=API_HEADERS)
         if Globals.response_buffer.status_code != 200:
             log_response_msg()
             raise RuntimeError("could not create a review for commemts")

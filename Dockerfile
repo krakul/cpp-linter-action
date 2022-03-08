@@ -1,26 +1,30 @@
-FROM xianpengshen/clang-tools:all
+# Based on https://github.com/shenxianpeng/cpp-linter-action
 
-# WORKDIR option is set by the github action to the environment variable GITHUB_WORKSPACE.
-# See https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
+FROM ubuntu:20.04
 
+ENV LLVM_VERSION="13.0.0"
+ENV PACKAGE="clang+llvm-${LLVM_VERSION}-x86_64-linux-gnu-ubuntu-20.04"
 
-LABEL com.github.actions.name="cpp-linter check"
-LABEL com.github.actions.description="Lint your code with clang-tidy in parallel to your builds"
-LABEL com.github.actions.icon="code"
-LABEL com.github.actions.color="gray-dark"
+WORKDIR /tmp
 
-LABEL repository="https://github.com/shenxianpeng/cpp-linter-action"
-LABEL maintainer="shenxianpeng <20297606+shenxianpeng@users.noreply.github.com>"
+RUN apt-get update \
+    && apt-get install -y xz-utils wget python3-pip \
+    && wget --no-verbose https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VERSION}/$PACKAGE.tar.xz \
+    && tar -xvf $PACKAGE.tar.xz \
+    && cp $PACKAGE/bin/clang-format /usr/bin/clang-format-13 \
+    && ln -s /usr/bin/clang-format-13 /usr/bin/clang-format \
+    && echo "--- Clang-format version ---" \
+    && clang-format --version \
+    && cp $PACKAGE/bin/clang-tidy /usr/bin/clang-tidy \
+    && echo "--- Clang-tidy version ---" \
+    && clang-tidy --version \
+    && rm -rf $PACKAGE $PACKAGE.tar.xz \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update
-RUN apt-get -y install python3-pip
-# RUN python3 -m pip install --upgrade pip
+WORKDIR /src
 
 COPY cpp_linter/ pkg/cpp_linter/
 COPY setup.py pkg/setup.py
 RUN python3 -m pip install pkg/
 
-# github action args use the CMD option
-# See https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#runsargs
-# also https://docs.docker.com/engine/reference/builder/#cmd
 ENTRYPOINT [ "python3", "-m", "cpp_linter.run" ]

@@ -68,7 +68,7 @@ cli_arg_parser.add_argument(
 cli_arg_parser.add_argument(
     "-V",
     "--version",
-    default="10",
+    default="",
     help="The desired version of the clang tools to use. Accepted options are strings "
     "which can be 6.0, 7, 8, 9, 10, 11, 12. Defaults to %(default)s.",
 )
@@ -197,7 +197,7 @@ def get_list_of_changed_files() -> None:
         logger.warning("triggered on unsupported event.")
         sys.exit(set_exit_code(0))
     logger.info("Fetching files list from url: %s", files_link)
-    Globals.FILES = requests.get(files_link).json()
+    Globals.FILES = requests.get(files_link, headers=API_HEADERS).json()
 
 
 def filter_out_non_source_files(
@@ -219,7 +219,7 @@ def filter_out_non_source_files(
     """
     files = []
     for file in (
-        Globals.FILES if GITHUB_EVENT_NAME == "pull_request" else Globals.FILES["files"]
+        Globals.FILES if GITHUB_EVENT_NAME == "pull_request" else Globals.FILES.get("files", [])
     ):
         if (
             os.path.splitext(file["filename"])[1][1:] in ext_list
@@ -292,7 +292,7 @@ def verify_files_are_present() -> None:
         if not os.path.exists(file_name):
             logger.warning("Could not find %s! Did you checkout the repo?", file_name)
             logger.info("Downloading file from url: %s", file["raw_url"])
-            Globals.response_buffer = requests.get(file["raw_url"])
+            Globals.response_buffer = requests.get(file["raw_url"], headers=API_HEADERS)
             with open(os.path.split(file_name)[1], "w", encoding="utf-8") as temp:
                 temp.write(Globals.response_buffer.text)
 
@@ -371,9 +371,10 @@ def run_clang_tidy(
         # clear the clang-tidy output file and exit function
         with open("clang_tidy_report.txt", "wb") as f_out:
             return
-    cmds = [f"clang-tidy-{version}"]
-    if sys.platform.startswith("win32"):
+    if not version or sys.platform.startswith("win32"):
         cmds = ["clang-tidy"]
+    else:
+        cmds = [f"clang-tidy-{version}"]
     if checks:
         cmds.append(f"-checks={checks}")
     cmds.append("--export-fixes=clang_tidy_output.yml")
@@ -411,8 +412,13 @@ def run_clang_format(
         lines_changed_only: A flag that forces focus on only changes in the event's
             diff info.
     """
-    cmds = [
-        "clang-format" + ("" if sys.platform.startswith("win32") else f"-{version}"),
+
+    if not version or sys.platform.startswith("win32"):
+        cmds = ["clang-format"]
+    else:
+        cmds = [f"clang-format-{version}"]
+
+    cmds += [
         f"-style={style}",
         "--output-replacements-xml",
     ]
@@ -539,7 +545,7 @@ def post_diff_comments(base_url: str, user_id: int) -> bool:
 
     # get existing review comments
     reviews_url = base_url + f'pulls/{Globals.EVENT_PAYLOAD["number"]}/'
-    Globals.response_buffer = requests.get(reviews_url + "comments")
+    Globals.response_buffer = requests.get(reviews_url + "comments", headers=API_HEADERS)
     existing_comments = json.loads(Globals.response_buffer.text)
     # filter out comments not made by our bot
     for index, comment in enumerate(existing_comments):
@@ -726,7 +732,7 @@ def main():
     os.chdir(args.repo_root)
 
     exit_early = False
-    if args.files_changed_only:
+    if args.files_changed_only and GITHUB_EVEN_PATH:
         # load event's json info about the workflow run
         with open(GITHUB_EVEN_PATH, "r", encoding="utf-8") as payload:
             Globals.EVENT_PAYLOAD = json.load(payload)
