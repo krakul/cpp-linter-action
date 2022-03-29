@@ -484,7 +484,8 @@ def capture_clang_tools_output(
                 if not Globals.OUTPUT:
                     Globals.OUTPUT = "<!-- cpp linter action -->\n## :scroll: "
                     Globals.OUTPUT += "Run `clang-format` on the following files\n"
-                Globals.OUTPUT += f"- [ ] {file['filename']}\n"
+                    Globals.OUTPUT += f"Follow instructions in the main `.clang-format` file to fix file formatting\n"
+                Globals.OUTPUT += f"- [ ] {file['filename']} (lines {', '.join(str(f.line) for f in GlobalParser.format_advice[-1].replaced_lines)})\n"
 
     if Globals.PAYLOAD_TIDY:
         if not Globals.OUTPUT:
@@ -664,8 +665,9 @@ def make_annotations(style: str) -> bool:
     for note in GlobalParser.format_advice:
         if note.replaced_lines:
             ret_val = True
-            log_commander.info(note.log_command(style))
-            count += 1
+            for log in note.log_command(style):
+                log_commander.info(log)
+                count += 1
     for note in GlobalParser.tidy_notes:
         ret_val = True
         log_commander.info(note.log_command())

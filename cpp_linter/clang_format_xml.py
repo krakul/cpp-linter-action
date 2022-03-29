@@ -98,22 +98,48 @@ class XMLFixit:
         """
         if style not in ("llvm", "google", "webkit", "mozilla", "gnu"):
             # potentially the style parameter could be a str of JSON/YML syntax
-            style = "Custom"
+            style = ".clang-format"
         else:
             if style.startswith("llvm") or style.startswith("gnu"):
                 style = style.upper()
             else:
                 style = style.title()
 
-        return (
-            "::notice file={name},title=Run clang-format on {name}::"
-            "File {name} (lines {lines}): Code does not conform to {style_guide} "
-            "style guidelines.".format(
-                name=self.filename,
-                lines=", ".join(str(f.line) for f in self.replaced_lines),
-                style_guide=style,
+        line_ranges = []
+        start_line = None
+        last_line = None
+        for line in self.replaced_lines:
+            if start_line == None:
+                #print("Starting new range at line", line.line)
+                start_line = line.line
+                last_line = line.line
+                continue
+            if line.line != last_line+1:
+                #print("Finished range at line", last_line)
+                line_ranges.append((start_line, last_line))
+                #print("Starting new range at line", line.line)
+                start_line = line.line
+            #else:
+            #    print("Continuing range at line", line.line)
+            last_line = line.line
+        if start_line != None:
+            #print("Finished range at line", last_line)
+            line_ranges.append((start_line, last_line))
+
+        notices = []
+        for range in line_ranges:
+            notices.append(
+                "::notice file={name},line={startLine},endLine={endLine},title=Run clang-format on {name}::"
+                "File {name} (lines {lines}): Code does not conform to {style_guide} "
+                "style guidelines.".format(
+                    name=self.filename,
+                    startLine=range[0], endLine=range[1],
+                    lines="-".join(str(f) for f in range),
+                    style_guide=style,
+
+                )
             )
-        )
+        return notices
 
 
 def parse_format_replacements_xml(src_filename: str):
