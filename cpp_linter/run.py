@@ -758,7 +758,7 @@ def main():
         sys.exit(set_exit_code(0))
 
     capture_clang_tools_output(
-        args.version, args.tidy_checks, args.style, args.lines_changed_only
+        None, args.tidy_checks, args.style, args.lines_changed_only
     )
 
     start_log_group("Posting comment(s)")
