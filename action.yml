@@ -71,7 +71,7 @@ outputs:
     description: An integer that can be used as a boolean value to indicate if all checks failed.
 runs:
   using: "docker"
-  image: "docker://ghcr.io/artizirk/cpp-linter-action/cpp-check:latest"
+  image: "docker://ghcr.io/krakul/cpp-linter-action/cpp-check:latest"
   args:
     - --style=${{ inputs.style }}
     - --extensions=${{ inputs.extensions }}
