@@ -13,9 +13,9 @@ RUN apt-get update \
     && rm -rf $PACKAGE $PACKAGE.tar.xz \
     && rm -rf /var/lib/apt/lists/*
 
-RUN bash -c 'if [[ -f /usr/bin/clang-format-14 ]]; then \
-    	ln -s /usr/bin/clang-format-14 /usr/bin/clang-format; \
-    	ln -s /usr/bin/clang-tidy-14 /usr/bin/clang-tidy; \
+RUN bash -c 'if [[ -f /usr/bin/clang-format-15 ]]; then \
+    	ln -s /usr/bin/clang-format-15 /usr/bin/clang-format; \
+    	ln -s /usr/bin/clang-tidy-15 /usr/bin/clang-tidy; \
     fi'
 
 RUN echo "--- Clang-format version ---" \
