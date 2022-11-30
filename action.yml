@@ -72,6 +72,9 @@ outputs:
 runs:
   using: "docker"
   image: "docker://ghcr.io/krakul/cpp-linter-action/cpp-check:latest"
+  credentials:
+       username: ${{ github.actor }}
+       password: ${{ secrets.GITHUB_TOKEN }}
   args:
     - --style=${{ inputs.style }}
     - --extensions=${{ inputs.extensions }}
